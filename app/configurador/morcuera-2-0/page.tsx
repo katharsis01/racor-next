@@ -29,7 +29,7 @@ export default function MorcueraConfiguratorPage() {
               <br />a tu manera
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-relaxed text-neutral-500 md:text-lg">
-              Gira el maillot, combina sus zonas y coloca el logo de tu equipo. Esta primera versión nos permitirá decidir juntos qué herramientas añadir después.
+              Elige un diseño, combina colores y personaliza nombre, dorsal y logo. Comparte tu propuesta y la revisaremos contigo antes de producir.
             </p>
           </div>
         </div>

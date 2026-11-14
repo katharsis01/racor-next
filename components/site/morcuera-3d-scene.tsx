@@ -13,8 +13,11 @@ import {
 } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { drawTemplate, PRINT, type TemplateId } from "@/lib/jersey-templates";
 
-export type TemplateId = "solido" | "degradado" | "bandas" | "diagonal";
+export type { TemplateId } from "@/lib/jersey-templates";
+
+export type JerseyTextFont = "deportiva" | "condensada" | "clasica";
 
 export type ViewCommand = {
   azimuth: number;
@@ -28,6 +31,10 @@ export type MorcueraSceneProps = {
   autoRotate: boolean;
   template: TemplateId;
   clubText: string;
+  backName: string;
+  backNumber: string;
+  textFont: JerseyTextFont;
+  textColor: string;
   view?: ViewCommand;
   logo?: {
     src: string;
@@ -62,58 +69,6 @@ function createTorsoShape() {
   shape.quadraticCurveTo(0, -1.96, -1.03, -1.82);
   shape.closePath();
   return shape;
-}
-
-// Área de dibujo de la "sublimación" del torso, en coordenadas de la forma
-// (x -1.35..1.35, y -2.1..1.9). El canvas se mapea a este rectángulo vía UV.
-const PRINT = { minX: -1.35, maxX: 1.35, minY: -2.1, maxY: 1.9, size: 512 };
-
-function drawTemplate(
-  ctx: CanvasRenderingContext2D,
-  template: TemplateId,
-  colors: { body: string; sleeves: string; trim: string },
-) {
-  const { size } = PRINT;
-  const width = PRINT.maxX - PRINT.minX;
-  const height = PRINT.maxY - PRINT.minY;
-  const toX = (x: number) => ((x - PRINT.minX) / width) * size;
-  const toY = (y: number) => ((PRINT.maxY - y) / height) * size;
-
-  ctx.fillStyle = colors.body;
-  ctx.fillRect(0, 0, size, size);
-
-  if (template === "degradado") {
-    const gradient = ctx.createLinearGradient(0, toY(0.9), 0, toY(-2.1));
-    gradient.addColorStop(0, colors.body);
-    gradient.addColorStop(1, colors.sleeves);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, toY(0.9), size, size - toY(0.9));
-  } else if (template === "bandas") {
-    // Bandas que se desvanecen hacia el pecho, al estilo "fade" de competición.
-    ctx.fillStyle = colors.sleeves;
-    for (let i = 0; i < 8; i++) {
-      const y = -1.7 + i * 0.34;
-      const bandHeight = (toY(0) - toY(0.09)) * (1 - i / 10);
-      ctx.globalAlpha = 1 - i / 9;
-      ctx.fillRect(0, toY(y), size, bandHeight);
-    }
-    ctx.globalAlpha = 1;
-  } else if (template === "diagonal") {
-    ctx.fillStyle = colors.sleeves;
-    ctx.beginPath();
-    ctx.moveTo(toX(-1.35), toY(-0.6));
-    ctx.lineTo(toX(1.35), toY(-1.6));
-    ctx.lineTo(toX(1.35), toY(-2.1));
-    ctx.lineTo(toX(-1.35), toY(-2.1));
-    ctx.closePath();
-    ctx.fill();
-    ctx.strokeStyle = colors.trim;
-    ctx.lineWidth = 10;
-    ctx.beginPath();
-    ctx.moveTo(toX(-1.35), toY(-0.45));
-    ctx.lineTo(toX(1.35), toY(-1.45));
-    ctx.stroke();
-  }
 }
 
 function useTorsoPrintTexture(
@@ -194,29 +149,59 @@ function GarmentPiece({
   );
 }
 
-function ClubTextDecal({ text, color }: { text: string; color: string }) {
+const FONT_FAMILIES: Record<JerseyTextFont, string> = {
+  deportiva: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  condensada: "Impact, 'Arial Narrow', sans-serif",
+  clasica: "Georgia, serif",
+};
+
+function TextDecal({
+  text,
+  color,
+  font,
+  position,
+  rotation,
+  scale,
+  square = false,
+}: {
+  text: string;
+  color: string;
+  font: JerseyTextFont;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+  square?: boolean;
+}) {
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = 1024;
-    canvas.height = 256;
+    canvas.width = square ? 512 : 1024;
+    canvas.height = square ? 512 : 256;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = "700 130px 'Helvetica Neue', Helvetica, Arial, sans-serif";
+      const fontSize = square ? 440 : 130;
+      ctx.font = `${square ? "900" : "700"} ${fontSize}px ${FONT_FAMILIES[font]}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = color;
-      ctx.fillText(text.toUpperCase(), 512, 138, 980);
+      const value = text.toUpperCase();
+      const maxWidth = canvas.width - (square ? 32 : 44);
+      const measuredWidth = ctx.measureText(value).width;
+      if (measuredWidth > maxWidth) {
+        const fittedFontSize = (fontSize * maxWidth) / measuredWidth;
+        ctx.font = `${square ? "900" : "700"} ${fittedFontSize}px ${FONT_FAMILIES[font]}`;
+      }
+      ctx.fillText(value, canvas.width / 2, canvas.height / 2);
     }
     const nextTexture = new THREE.CanvasTexture(canvas);
     nextTexture.colorSpace = THREE.SRGBColorSpace;
     return nextTexture;
-  }, [text, color]);
+  }, [text, color, font, square]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 
   return (
-    <Decal position={[0, -0.2, 0.46]} rotation={[0, 0, 0]} scale={[1.7, 0.425, 0.5]}>
+    <Decal position={position} rotation={rotation} scale={scale}>
       <meshBasicMaterial
         alphaTest={0.05}
         depthWrite={false}
@@ -285,6 +270,10 @@ function MorcueraModel({
   trimColor,
   template,
   clubText,
+  backName,
+  backNumber,
+  textFont,
+  textColor,
   logo,
   logoX,
   logoY,
@@ -300,6 +289,7 @@ function MorcueraModel({
     trimColor,
   );
   const trimmedText = clubText.trim();
+  const trimmedBackName = backName.trim();
 
   return (
     <group rotation={[0.03, 0, 0]}>
@@ -314,7 +304,35 @@ function MorcueraModel({
           />
         )}
         {trimmedText && (
-          <ClubTextDecal color={contrastColor(bodyColor)} text={trimmedText} />
+          <TextDecal
+            color={textColor === "auto" ? contrastColor(bodyColor) : textColor}
+            font={textFont}
+            position={[0, -0.2, 0.46]}
+            rotation={[0, 0, 0]}
+            scale={[1.7, 0.425, 0.5]}
+            text={trimmedText}
+          />
+        )}
+        {trimmedBackName && (
+          <TextDecal
+            color={textColor === "auto" ? contrastColor(bodyColor) : textColor}
+            font={textFont}
+            position={[0, 0.78, -0.08]}
+            rotation={[0, Math.PI, 0]}
+            scale={[1.5, 0.3, 0.35]}
+            text={trimmedBackName}
+          />
+        )}
+        {backNumber && (
+          <TextDecal
+            color={textColor === "auto" ? contrastColor(bodyColor) : textColor}
+            font={textFont}
+            position={[0, -0.12, -0.08]}
+            rotation={[0, Math.PI, 0]}
+            scale={[1.5, 1.5, 0.35]}
+            square
+            text={backNumber}
+          />
         )}
       </GarmentPiece>
       <GarmentPiece color={sleeveColor} shape={leftSleeveShape} />
@@ -449,6 +467,8 @@ export function Morcuera3DScene(props: MorcueraSceneProps) {
       />
 
       <ResponsiveGarment
+        backName={props.backName}
+        backNumber={props.backNumber}
         bodyColor={props.bodyColor}
         clubText={props.clubText}
         logo={props.logo}
@@ -457,6 +477,8 @@ export function Morcuera3DScene(props: MorcueraSceneProps) {
         logoY={props.logoY}
         sleeveColor={props.sleeveColor}
         template={props.template}
+        textColor={props.textColor}
+        textFont={props.textFont}
         trimColor={props.trimColor}
       />
       <ViewPresetController controlsRef={controlsRef} view={props.view} />
