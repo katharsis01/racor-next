@@ -62,13 +62,11 @@ import { ASSISTANT_OPEN_EVENT } from "@/components/site/assistant-launcher";
 import { cn } from "@/lib/utils";
 import {
   buildDesignersSummary,
-  buildPageWhatsAppText,
   buildWhatsAppSummary,
   extractOrderSummary,
   whatsAppLink,
   type OrderSummary,
 } from "@/lib/whatsapp-summary";
-import { SITE_URL } from "@/lib/site";
 
 const ASSISTANT_HISTORY_KEY = "racor-product-assistant-history-v3";
 
@@ -504,20 +502,8 @@ export function ProductAssistant() {
   const whatsAppSummary = buildWhatsAppSummary(messages, contextHandle);
   const whatsAppHref = whatsAppLink(whatsAppSummary);
 
-  const pageWhatsAppHref = whatsAppLink(
-    buildPageWhatsAppText(`${SITE_URL}${pathname}`, currentProduct?.title)
-  );
-  const floatingWhatsAppHref = hasCustomerMessages ? whatsAppHref : pageWhatsAppHref;
-
-  function currentPageWhatsAppHref() {
-    const title =
-      currentProduct?.title ??
-      (pathname === "/" ? undefined : document.title.replace(/\s+—\s+RACOR$/, "").trim());
-    return whatsAppLink(buildPageWhatsAppText(window.location.href.split("#")[0], title || undefined));
-  }
-
-  function openWhatsApp(source: "chat" | "floating" = "chat") {
-    trackEvent(source === "chat" ? "chat_external_click" : "whatsapp_float_click", {
+  function openWhatsApp() {
+    trackEvent("chat_external_click", {
       destination: "whatsapp",
       page: pathname,
       product: contextHandle,
@@ -620,32 +606,6 @@ export function ProductAssistant() {
           </span>
         </button>
       </SheetTrigger>
-
-      <a
-        href={floatingWhatsAppHref}
-        target="_blank"
-        rel="noreferrer"
-        onClick={(event) => {
-          if (!hasCustomerMessages) event.currentTarget.href = currentPageWhatsAppHref();
-          openWhatsApp("floating");
-        }}
-        aria-label={
-          hasCustomerMessages
-            ? "Enviar el resumen de tu pedido a RACOR por WhatsApp"
-            : "Escribir a RACOR por WhatsApp"
-        }
-        className={`group fixed left-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[60] grid place-items-center rounded-full bg-[#25D366] text-white shadow-[0_18px_45px_rgba(0,0,0,0.25)] transition-[transform,box-shadow,opacity] duration-300 hover:-translate-y-1 hover:scale-105 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#25D366] sm:left-5 sm:bottom-5 md:left-6 md:bottom-6 ${open ? "pointer-events-none invisible opacity-0" : "opacity-100"} ${compactLauncher ? "size-13" : "size-14"}`}
-      >
-        <WhatsAppIcon className="size-7" />
-        <span className="pointer-events-none absolute left-[calc(100%+0.75rem)] hidden w-max border border-neutral-800 bg-neutral-950 px-3 py-2 text-left text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 sm:block">
-          <span className="block text-[9px] font-semibold uppercase tracking-[0.17em] text-white/55">
-            WhatsApp RACOR
-          </span>
-          <span className="mt-0.5 block text-[11px] font-semibold">
-            {hasCustomerMessages ? "Enviar resumen de tu pedido" : "Escríbenos por WhatsApp"}
-          </span>
-        </span>
-      </a>
 
       <SheetContent
         side="right"
