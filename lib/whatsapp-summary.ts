@@ -96,16 +96,16 @@ function detectSizes(text: string) {
   };
 }
 
-function detectQuantity(text: string, sizesTotal?: number) {
+function detectQuantity(text: string) {
   const normalized = normalize(text);
   const explicit = [
     ...normalized.matchAll(new RegExp(`(\\d{1,4})\\s+(?:\\w+\\s+)?(?:${QUANTITY_UNITS})\\b`, "g")),
     ...normalized.matchAll(/\bsomos\s+(\d{1,4})\b/g),
-  ].map((match) => Number(match[1]));
+  ]
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
+    .map((match) => Number(match[1]));
 
-  if (explicit.length) return `${Math.max(...explicit)} unidades`;
-  if (sizesTotal) return `${sizesTotal} unidades`;
-  return undefined;
+  return explicit.length ? `${explicit.at(-1)} unidades` : undefined;
 }
 
 function detectDesign(text: string) {
@@ -138,6 +138,14 @@ function detectBudget(text: string) {
   return match ? `${match[1]} €` : undefined;
 }
 
+function latest<T>(notes: string[], detect: (note: string) => T | undefined) {
+  for (let index = notes.length - 1; index >= 0; index -= 1) {
+    const value = detect(notes[index]);
+    if (value !== undefined) return value;
+  }
+  return undefined;
+}
+
 function truncate(text: string, maxChars: number) {
   return Array.from(text).slice(0, maxChars).join("");
 }
@@ -147,7 +155,7 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
   if (!notes.length) return FALLBACK_TEXT;
 
   const text = notes.join("\n");
-  const sizes = detectSizes(text);
+  const sizes = latest(notes, detectSizes);
 
   const lines = [
     "Hola, he hablado con el asistente de RACOR y quiero continuar mi pedido.",
@@ -155,11 +163,11 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
     "*Solicitud de presupuesto — RACOR*",
     "",
     `Producto: ${detectProducts(text, contextHandle) ?? PENDING}`,
-    `Cantidad: ${detectQuantity(text, sizes?.total) ?? PENDING}`,
+    `Cantidad: ${latest(notes, detectQuantity) ?? (sizes ? `${sizes.total} unidades` : PENDING)}`,
     `Tallas: ${sizes?.label ?? PENDING}`,
-    `Diseño: ${detectDesign(text) ?? PENDING}`,
-    `Fecha deseada: ${detectDate(text) ?? PENDING}`,
-    `Presupuesto: ${detectBudget(text) ?? PENDING}`,
+    `Diseño: ${latest(notes, detectDesign) ?? PENDING}`,
+    `Fecha deseada: ${latest(notes, detectDate) ?? PENDING}`,
+    `Presupuesto: ${latest(notes, detectBudget) ?? PENDING}`,
     "",
     "Lo que he contado al asistente:",
     ...notes.slice(-5).map((note) => `- ${truncate(note.replace(/\s+/g, " "), 280)}`),
