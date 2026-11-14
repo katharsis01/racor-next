@@ -448,7 +448,7 @@ export function getProductAssistantReply(
   }
 
   if (includesAny(q, ["devolucion", "cambio", "envio", "portes", "stock"])) {
-    return "Ese dato no está publicado con suficiente detalle en el catálogo y prefiero no inventarlo. Puedes [preguntarlo directamente a RACOR](/contacto) o escribir por [WhatsApp](https://wa.me/34653224053).";
+    return "Ese dato no está publicado con suficiente detalle en el catálogo y prefiero no inventarlo. Puedes [preguntarlo directamente a RACOR](/contacto) o escribir por [WhatsApp](https://wa.me/34652602523).";
   }
 
   if (mentioned[0]) return describeProduct(mentioned[0]);

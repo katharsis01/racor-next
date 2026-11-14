@@ -699,7 +699,7 @@ export function ProductAssistant() {
               Hablar con RACOR
             </Link>
             <a
-              href="https://wa.me/34653224053?text=Hola%20RACOR%2C%20necesito%20ayuda%20con%20una%20equipaci%C3%B3n."
+              href="https://wa.me/34652602523?text=Hola%20RACOR%2C%20necesito%20ayuda%20con%20una%20equipaci%C3%B3n."
               target="_blank"
               rel="noreferrer"
               onClick={() =>
