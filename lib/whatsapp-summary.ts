@@ -6,6 +6,18 @@ export const RACOR_CHAT_WHATSAPP = "34652602523";
 const FALLBACK_TEXT = "Hola RACOR, necesito ayuda con una equipación.";
 const PENDING = "Pendiente de confirmar";
 
+export type OrderSummaryField = {
+  key: "product" | "quantity" | "sizes" | "design" | "date" | "budget";
+  label: string;
+  value?: string;
+};
+
+export type OrderSummary = {
+  fields: OrderSummaryField[];
+  notes: string[];
+  detectedCount: number;
+};
+
 const MODE_PROMPTS = [
   "necesito ayuda con mi talla y ajuste",
   "quiero preparar una equipacion personalizada para mi club",
@@ -161,8 +173,21 @@ function truncate(text: string, maxChars: number) {
 }
 
 export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: string) {
+  const summary = extractOrderSummary(messages, contextHandle);
+  return summary
+    ? formatOrderSummary(
+        summary,
+        "Hola, he hablado con el asistente de RACOR y quiero continuar mi pedido.",
+      )
+    : FALLBACK_TEXT;
+}
+
+export function extractOrderSummary(
+  messages: UIMessage[],
+  contextHandle?: string,
+): OrderSummary | null {
   const notes = customerMessages(messages);
-  if (!notes.length) return FALLBACK_TEXT;
+  if (!notes.length) return null;
 
   const text = notes.join("\n");
   const sizes = latest(notes, detectSizes);
@@ -171,23 +196,52 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
     latest(notes, detectHeadcount) ??
     (sizes ? `${sizes.total} unidades` : undefined);
 
+  const fields: OrderSummaryField[] = [
+    { key: "product", label: "Producto", value: detectProducts(text, contextHandle) },
+    { key: "quantity", label: "Cantidad", value: quantity },
+    { key: "sizes", label: "Tallas", value: sizes?.label },
+    { key: "design", label: "Diseño", value: latest(notes, detectDesign) },
+    { key: "date", label: "Fecha deseada", value: latest(notes, detectDate) },
+    { key: "budget", label: "Presupuesto", value: latest(notes, detectBudget) },
+  ];
+
+  return {
+    fields,
+    notes,
+    detectedCount: fields.filter((field) => field.value !== undefined).length,
+  };
+}
+
+function formatOrderSummary(summary: OrderSummary, greeting: string) {
+  const values = Object.fromEntries(
+    summary.fields.map(({ key, value }) => [key, value ?? PENDING]),
+  ) as Record<OrderSummaryField["key"], string>;
   const lines = [
-    "Hola, he hablado con el asistente de RACOR y quiero continuar mi pedido.",
+    greeting,
     "",
     "*Solicitud de presupuesto — RACOR*",
     "",
-    `Producto: ${detectProducts(text, contextHandle) ?? PENDING}`,
-    `Cantidad: ${quantity ?? PENDING}`,
-    `Tallas: ${sizes?.label ?? PENDING}`,
-    `Diseño: ${latest(notes, detectDesign) ?? PENDING}`,
-    `Fecha deseada: ${latest(notes, detectDate) ?? PENDING}`,
-    `Presupuesto: ${latest(notes, detectBudget) ?? PENDING}`,
+    `Producto: ${values.product}`,
+    `Cantidad: ${values.quantity}`,
+    `Tallas: ${values.sizes}`,
+    `Diseño: ${values.design}`,
+    `Fecha deseada: ${values.date}`,
+    `Presupuesto: ${values.budget}`,
     "",
     "Lo que he contado al asistente:",
-    ...notes.slice(-5).map((note) => `- ${truncate(note.replace(/\s+/g, " "), 280)}`),
+    ...summary.notes
+      .slice(-5)
+      .map((note) => `- ${truncate(note.replace(/\s+/g, " "), 280)}`),
   ];
 
   return lines.join("\n");
+}
+
+export function buildDesignersSummary(summary: OrderSummary) {
+  return formatOrderSummary(
+    summary,
+    "Resumen del pedido preparado en el chat de racorsport.cc",
+  );
 }
 
 export function buildPageWhatsAppText(url: string, pageTitle?: string) {
