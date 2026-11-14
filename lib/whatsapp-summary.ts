@@ -138,6 +138,10 @@ function detectBudget(text: string) {
   return match ? `${match[1]} €` : undefined;
 }
 
+function truncate(text: string, maxChars: number) {
+  return Array.from(text).slice(0, maxChars).join("");
+}
+
 export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: string) {
   const notes = customerMessages(messages);
   if (!notes.length) return FALLBACK_TEXT;
@@ -158,7 +162,7 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
     `Presupuesto: ${detectBudget(text) ?? PENDING}`,
     "",
     "Lo que he contado al asistente:",
-    ...notes.slice(-5).map((note) => `- ${note.replace(/\s+/g, " ").slice(0, 280)}`),
+    ...notes.slice(-5).map((note) => `- ${truncate(note.replace(/\s+/g, " "), 280)}`),
   ];
 
   return lines.join("\n");
