@@ -323,7 +323,23 @@ export function ProductAssistant() {
       : [];
   const savedMessageCount = Math.max(0, messages.length - 1);
   const hasCustomerMessages = messages.some((message) => message.role === "user");
-  const whatsAppHref = whatsAppLink(buildWhatsAppSummary(messages, contextHandle));
+  const whatsAppSummary = buildWhatsAppSummary(messages, contextHandle);
+  const whatsAppHref = whatsAppLink(whatsAppSummary);
+
+  function openWhatsApp() {
+    trackEvent("chat_external_click", {
+      destination: "whatsapp",
+      product: contextHandle,
+      summary: hasCustomerMessages,
+    });
+    if (!hasCustomerMessages) return;
+    void fetch("/api/chat-handoff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ summary: whatsAppSummary, product: contextHandle }),
+      keepalive: true,
+    }).catch(() => undefined);
+  }
 
   async function ask(
     text: string,
@@ -705,13 +721,7 @@ export function ProductAssistant() {
               href={whatsAppHref}
               target="_blank"
               rel="noreferrer"
-              onClick={() =>
-                trackEvent("chat_external_click", {
-                  destination: "whatsapp",
-                  product: contextHandle,
-                  summary: hasCustomerMessages,
-                })
-              }
+              onClick={openWhatsApp}
               className="inline-flex min-h-10 items-center justify-center gap-2 border border-neutral-300 px-3 text-[10px] font-semibold uppercase tracking-[0.09em] text-neutral-800 transition-colors hover:border-racor hover:text-racor"
             >
               <MessageCircle className="size-3.5" aria-hidden="true" />
