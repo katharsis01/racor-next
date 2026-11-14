@@ -23,8 +23,9 @@ const GARMENTS: Array<{ label: string; terms: RegExp }> = [
   { label: "Equipación completa", terms: /\bequipaci(?:o|ó)n(?:es)? complet/ },
 ];
 
-const QUANTITY_UNITS =
-  "unidades|uds?|maillots?|culottes?|chaquetas?|chalecos?|prendas?|equipaciones|ciclistas|corredores|personas|miembros|socios|monos?|kits?";
+const ORDER_UNITS =
+  "unidades|uds?|maillots?|culottes?|chaquetas?|chalecos?|prendas?|equipaciones|monos?|kits?";
+const PEOPLE_UNITS = "ciclistas|corredores|personas|miembros|socios";
 
 const SIZE_TOKEN = "XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL|4XL";
 
@@ -96,16 +97,25 @@ function detectSizes(text: string) {
   };
 }
 
-function detectQuantity(text: string) {
-  const normalized = normalize(text);
-  const explicit = [
-    ...normalized.matchAll(new RegExp(`(\\d{1,4})\\s+(?:\\w+\\s+)?(?:${QUANTITY_UNITS})\\b`, "g")),
-    ...normalized.matchAll(/\bsomos\s+(\d{1,4})\b/g),
-  ]
-    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0))
-    .map((match) => Number(match[1]));
+function lastNumber(text: string, patterns: RegExp[]) {
+  const matches = patterns
+    .flatMap((pattern) => [...text.matchAll(pattern)])
+    .sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+  const last = matches.at(-1);
+  return last ? `${Number(last[1])} unidades` : undefined;
+}
 
-  return explicit.length ? `${explicit.at(-1)} unidades` : undefined;
+function detectOrderQuantity(text: string) {
+  return lastNumber(normalize(text), [
+    new RegExp(`(\\d{1,4})\\s+(?:\\w+\\s+)?(?:${ORDER_UNITS})\\b`, "g"),
+  ]);
+}
+
+function detectHeadcount(text: string) {
+  return lastNumber(normalize(text), [
+    new RegExp(`(\\d{1,4})\\s+(?:\\w+\\s+)?(?:${PEOPLE_UNITS})\\b`, "g"),
+    /\bsomos\s+(\d{1,4})\b/g,
+  ]);
 }
 
 function detectDesign(text: string) {
@@ -156,6 +166,10 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
 
   const text = notes.join("\n");
   const sizes = latest(notes, detectSizes);
+  const quantity =
+    latest(notes, detectOrderQuantity) ??
+    latest(notes, detectHeadcount) ??
+    (sizes ? `${sizes.total} unidades` : undefined);
 
   const lines = [
     "Hola, he hablado con el asistente de RACOR y quiero continuar mi pedido.",
@@ -163,7 +177,7 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
     "*Solicitud de presupuesto — RACOR*",
     "",
     `Producto: ${detectProducts(text, contextHandle) ?? PENDING}`,
-    `Cantidad: ${latest(notes, detectQuantity) ?? (sizes ? `${sizes.total} unidades` : PENDING)}`,
+    `Cantidad: ${quantity ?? PENDING}`,
     `Tallas: ${sizes?.label ?? PENDING}`,
     `Diseño: ${latest(notes, detectDesign) ?? PENDING}`,
     `Fecha deseada: ${latest(notes, detectDate) ?? PENDING}`,
