@@ -150,9 +150,9 @@ function GarmentPiece({
 }
 
 const FONT_FAMILIES: Record<JerseyTextFont, string> = {
-  deportiva: "700 130px 'Helvetica Neue', Helvetica, Arial, sans-serif",
-  condensada: "700 130px Impact, 'Arial Narrow', sans-serif",
-  clasica: "700 130px Georgia, serif",
+  deportiva: "'Helvetica Neue', Helvetica, Arial, sans-serif",
+  condensada: "Impact, 'Arial Narrow', sans-serif",
+  clasica: "Georgia, serif",
 };
 
 function TextDecal({
@@ -162,6 +162,7 @@ function TextDecal({
   position,
   rotation,
   scale,
+  square = false,
 }: {
   text: string;
   color: string;
@@ -169,24 +170,33 @@ function TextDecal({
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
+  square?: boolean;
 }) {
   const texture = useMemo(() => {
     const canvas = document.createElement("canvas");
-    canvas.width = 1024;
-    canvas.height = 256;
+    canvas.width = square ? 512 : 1024;
+    canvas.height = square ? 512 : 256;
     const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.font = FONT_FAMILIES[font];
+      const fontSize = square ? 440 : 130;
+      ctx.font = `${square ? "900" : "700"} ${fontSize}px ${FONT_FAMILIES[font]}`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = color;
-      ctx.fillText(text.toUpperCase(), 512, 128, 980);
+      const value = text.toUpperCase();
+      const maxWidth = canvas.width - (square ? 32 : 44);
+      const measuredWidth = ctx.measureText(value).width;
+      if (measuredWidth > maxWidth) {
+        const fittedFontSize = (fontSize * maxWidth) / measuredWidth;
+        ctx.font = `${square ? "900" : "700"} ${fittedFontSize}px ${FONT_FAMILIES[font]}`;
+      }
+      ctx.fillText(value, canvas.width / 2, canvas.height / 2);
     }
     const nextTexture = new THREE.CanvasTexture(canvas);
     nextTexture.colorSpace = THREE.SRGBColorSpace;
     return nextTexture;
-  }, [text, color, font]);
+  }, [text, color, font, square]);
 
   useEffect(() => () => texture.dispose(), [texture]);
 
@@ -317,9 +327,10 @@ function MorcueraModel({
           <TextDecal
             color={textColor === "auto" ? contrastColor(bodyColor) : textColor}
             font={textFont}
-            position={[0, 0.02, -0.08]}
+            position={[0, -0.12, -0.08]}
             rotation={[0, Math.PI, 0]}
-            scale={[0.95, 0.82, 0.35]}
+            scale={[1.5, 1.5, 0.35]}
+            square
             text={backNumber}
           />
         )}

@@ -73,19 +73,25 @@ type PrintColor = {
 
 const PRINT_COLORS: PrintColor[] = [
   { name: "Negro", value: "#111111" },
-  { name: "Blanco", value: "#f4f1e8" },
+  { name: "Crema", value: "#f4f1e8" },
   { name: "Rojo", value: "#d62828" },
   { name: "Coral", value: "#f25f52" },
+  { name: "Salmón", value: "#ff8a68" },
+  { name: "Frambuesa", value: "#f43f5e" },
   { name: "Naranja", value: "#f28c28" },
   { name: "Amarillo", value: "#f4d35e" },
   { name: "Lima", value: "#c4d600" },
   { name: "Verde", value: "#2a9d68" },
-  { name: "Bosque", value: "#0c332c" },
+  { name: "Verde bosque", value: "#0c332c" },
+  { name: "Verde pino", value: "#275d51" },
   { name: "Turquesa", value: "#20b2aa" },
   { name: "Cielo", value: "#43a5d8" },
   { name: "Azul", value: "#1464a5" },
   { name: "Marino", value: "#12243a" },
-  { name: "Morado", value: "#7767a8" },
+  { name: "Lavanda", value: "#7767a8" },
+  { name: "Lila", value: "#a899d0" },
+  { name: "Antracita", value: "#303030" },
+  { name: "Amarillo flúor", value: "#e6ff3f" },
   { name: "Rosa", value: "#e76f9a" },
   { name: "Gris", value: "#888888" },
 ];
@@ -636,7 +642,7 @@ export function JerseyConfigurator() {
             ))}
           </div>
 
-          <div className="pointer-events-none absolute top-4 left-4 border border-neutral-900/15 bg-white/90 px-3 py-2 backdrop-blur">
+          <div className="pointer-events-none absolute top-4 left-4 max-w-[calc(100%-4rem)] border border-neutral-900/15 bg-white/90 px-3 py-2 backdrop-blur md:max-w-none">
             <p className="text-[9px] font-semibold uppercase tracking-[0.16em] text-neutral-400">
               Prototipo visual
             </p>
@@ -646,13 +652,17 @@ export function JerseyConfigurator() {
           </div>
 
           <button
+            aria-label={autoRotate ? "Pausar giro automático" : "Activar giro automático"}
             aria-pressed={autoRotate}
-            className="absolute right-4 bottom-4 inline-flex min-h-11 items-center gap-2 border border-neutral-300 bg-white/90 px-4 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur transition-colors hover:border-neutral-900"
+            className="absolute top-3 right-3 inline-flex size-10 items-center justify-center border border-neutral-300 bg-white/90 p-0 text-[10px] font-semibold uppercase tracking-[0.12em] backdrop-blur transition-colors hover:border-neutral-900 md:top-auto md:right-4 md:bottom-4 md:size-auto md:min-h-11 md:justify-start md:gap-2 md:px-4"
             onClick={() => setAutoRotate((value) => !value)}
+            title={autoRotate ? "Pausar giro" : "Activar giro"}
             type="button"
           >
             {autoRotate ? <Pause className="size-3.5" /> : <Play className="size-3.5" />}
-            {autoRotate ? "Pausar giro" : "Activar giro"}
+            <span className="hidden md:inline">
+              {autoRotate ? "Pausar giro" : "Activar giro"}
+            </span>
           </button>
         </div>
 
