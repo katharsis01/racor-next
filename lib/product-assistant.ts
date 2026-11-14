@@ -1,5 +1,6 @@
 import type { Product } from "@/lib/commerce/types";
 import { getProductByHandle, products } from "@/lib/commerce/local";
+import { RACOR_CHAT_WHATSAPP } from "@/lib/whatsapp-summary";
 
 export type ProductAssistantMode = "size" | "team" | "catalog" | "support";
 
@@ -448,7 +449,7 @@ export function getProductAssistantReply(
   }
 
   if (includesAny(q, ["devolucion", "cambio", "envio", "portes", "stock"])) {
-    return "Ese dato no está publicado con suficiente detalle en el catálogo y prefiero no inventarlo. Puedes [preguntarlo directamente a RACOR](/contacto) o escribir por [WhatsApp](https://wa.me/34652602523).";
+    return `Ese dato no está publicado con suficiente detalle en el catálogo y prefiero no inventarlo. Puedes [preguntarlo directamente a RACOR](/contacto) o escribir por [WhatsApp](https://wa.me/${RACOR_CHAT_WHATSAPP}).`;
   }
 
   if (mentioned[0]) return describeProduct(mentioned[0]);

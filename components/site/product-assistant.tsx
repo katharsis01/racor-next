@@ -58,6 +58,7 @@ import {
 } from "@/lib/analytics-events";
 import { ASSISTANT_OPEN_EVENT } from "@/components/site/assistant-launcher";
 import { cn } from "@/lib/utils";
+import { buildWhatsAppSummary, whatsAppLink } from "@/lib/whatsapp-summary";
 
 const ASSISTANT_HISTORY_KEY = "racor-product-assistant-history-v3";
 
@@ -321,6 +322,8 @@ export function ProductAssistant() {
         ]
       : [];
   const savedMessageCount = Math.max(0, messages.length - 1);
+  const hasCustomerMessages = messages.some((message) => message.role === "user");
+  const whatsAppHref = whatsAppLink(buildWhatsAppSummary(messages, contextHandle));
 
   async function ask(
     text: string,
@@ -699,19 +702,20 @@ export function ProductAssistant() {
               Hablar con RACOR
             </Link>
             <a
-              href="https://wa.me/34652602523?text=Hola%20RACOR%2C%20necesito%20ayuda%20con%20una%20equipaci%C3%B3n."
+              href={whatsAppHref}
               target="_blank"
               rel="noreferrer"
               onClick={() =>
                 trackEvent("chat_external_click", {
                   destination: "whatsapp",
                   product: contextHandle,
+                  summary: hasCustomerMessages,
                 })
               }
               className="inline-flex min-h-10 items-center justify-center gap-2 border border-neutral-300 px-3 text-[10px] font-semibold uppercase tracking-[0.09em] text-neutral-800 transition-colors hover:border-racor hover:text-racor"
             >
               <MessageCircle className="size-3.5" aria-hidden="true" />
-              WhatsApp
+              {hasCustomerMessages ? "Resumen por WhatsApp" : "WhatsApp"}
             </a>
           </div>
         </div>
