@@ -6,12 +6,14 @@ import { CollectionCard } from "@/components/site/collection-card";
 import { Reveal } from "@/components/site/reveal";
 import { SectionHead } from "@/components/site/page-hero";
 import { InstagramShowcase } from "@/components/site/instagram-showcase";
+import { ProcessSteps, type ProcessStep } from "@/components/site/process-steps";
 
-const STEPS = [
+const STEPS: ProcessStep[] = [
   {
     n: "01",
     t: "Tu sueño",
     d: "Cuéntanos tu idea: colores, gustos, imágenes y logotipos que quieras incluir.",
+    meta: "Respuesta en 24–48 h",
   },
   {
     n: "02",
@@ -27,6 +29,7 @@ const STEPS = [
     n: "04",
     t: "Producción",
     d: "El diseño definitivo pasa a fabricación en Madrid bajo exhaustivos controles de calidad.",
+    meta: "≈ 4 semanas",
   },
 ];
 
@@ -128,21 +131,7 @@ export default function HomePage() {
       {/* Proceso */}
       <section className="py-24 md:py-36">
         <SectionHead title="El Proceso" sub="Equipaciones personalizadas en cuatro pasos." />
-        <ol className="grid grid-cols-1 gap-10 px-5 sm:grid-cols-2 md:px-12 lg:grid-cols-4 lg:px-16">
-          {STEPS.map((s, i) => (
-            <Reveal key={s.n} delay={i * 0.08}>
-              <li>
-                <span className="mb-3.5 block text-[13px] tracking-[0.1em] text-neutral-500">
-                  {s.n}
-                </span>
-                <h3 className="mb-2.5 border-t border-neutral-900 pt-3.5 text-base font-semibold uppercase tracking-[0.04em]">
-                  {s.t}
-                </h3>
-                <p className="text-sm text-neutral-500">{s.d}</p>
-              </li>
-            </Reveal>
-          ))}
-        </ol>
+        <ProcessSteps steps={STEPS} />
       </section>
 
       {/* Proyectos */}
