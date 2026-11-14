@@ -81,7 +81,7 @@ function detectProducts(text: string, contextHandle?: string) {
 }
 
 function detectSizes(text: string) {
-  const pattern = new RegExp(`(\\d{1,4})\\s*(?:de\\s+(?:la\\s+)?(?:talla\\s+)?)?(${SIZE_TOKEN})\\b`, "gi");
+  const pattern = new RegExp(`(?<![\\d.,])(\\d{1,4})\\s*(?:de\\s+(?:la\\s+)?(?:talla\\s+)?)?(${SIZE_TOKEN})\\b`, "gi");
   const sizes = new Map<string, number>();
 
   for (const match of text.matchAll(pattern)) {
