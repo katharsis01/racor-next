@@ -7,7 +7,9 @@ import { usePathname } from "next/navigation";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import {
+  Check,
   Clock3,
+  Copy,
   LifeBuoy,
   Loader2,
   MessageCircle,
@@ -59,9 +61,12 @@ import {
 import { ASSISTANT_OPEN_EVENT } from "@/components/site/assistant-launcher";
 import { cn } from "@/lib/utils";
 import {
+  buildDesignersSummary,
   buildPageWhatsAppText,
   buildWhatsAppSummary,
+  extractOrderSummary,
   whatsAppLink,
+  type OrderSummary,
 } from "@/lib/whatsapp-summary";
 import { SITE_URL } from "@/lib/site";
 
@@ -245,6 +250,162 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+function OrderSummaryCard({
+  summary,
+  contextHandle,
+  whatsAppHref,
+  whatsAppSummary,
+  onWhatsAppClick,
+}: {
+  summary: OrderSummary;
+  contextHandle?: string;
+  whatsAppHref: string;
+  whatsAppSummary: string;
+  onWhatsAppClick: () => void;
+}) {
+  const [sendState, setSendState] = useState<
+    "idle" | "sending" | "success" | "error"
+  >("idle");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = window.setTimeout(() => setCopied(false), 2000);
+    return () => window.clearTimeout(timer);
+  }, [copied]);
+
+  async function sendToDesigners() {
+    setSendState("sending");
+    let result: "success" | "error" = "error";
+    try {
+      const response = await fetch("/api/chat-handoff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          summary: buildDesignersSummary(summary),
+          product: contextHandle,
+          source: "designers",
+        }),
+      });
+      const data = (await response.json().catch(() => null)) as
+        | { ok?: unknown }
+        | null;
+      if (response.ok && data?.ok === true) {
+        result = "success";
+        setSendState("success");
+      } else {
+        setSendState("error");
+      }
+    } catch {
+      setSendState("error");
+    }
+    trackEvent("chat_designers_send", { product: contextHandle, result });
+  }
+
+  async function copySummary() {
+    try {
+      await navigator.clipboard.writeText(whatsAppSummary);
+      setCopied(true);
+    } catch {
+    }
+  }
+
+  return (
+    <Message from="assistant">
+      <div className="flex items-center gap-2">
+        <RacorAssistantMark compact />
+        <span className="text-[9px] font-semibold uppercase tracking-[0.15em] text-racor">
+          RACOR
+        </span>
+      </div>
+      <MessageContent className="w-full border-l-2 border-racor/15 pl-4 text-[13px] leading-relaxed">
+        <div className="w-full border border-neutral-200 bg-white p-4">
+          <h3 className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+            Resumen de tu pedido
+          </h3>
+          <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+            {summary.fields.map((field) => (
+              <div className="min-w-0" key={field.key}>
+                <dt className="text-[9px] font-semibold uppercase tracking-[0.1em] text-neutral-400">
+                  {field.label}
+                </dt>
+                <dd
+                  className={`mt-0.5 break-words text-xs ${
+                    field.value === undefined ? "text-neutral-400" : "text-neutral-800"
+                  }`}
+                >
+                  {field.value ?? "Pendiente"}
+                </dd>
+              </div>
+            ))}
+          </dl>
+          <p className="mt-4 text-[11px] leading-relaxed text-neutral-500">
+            ¿Falta algo? Escríbelo en el chat y el resumen se actualiza.
+          </p>
+          <div className="mt-4 grid gap-2">
+            <button
+              className="inline-flex min-h-11 items-center justify-center gap-2 bg-racor px-4 text-[10px] font-semibold uppercase tracking-[0.09em] text-white transition-colors hover:bg-neutral-950 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={sendState === "sending" || sendState === "success"}
+              onClick={sendToDesigners}
+              type="button"
+            >
+              {sendState === "sending" ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                  Enviando…
+                </>
+              ) : sendState === "success" ? (
+                <>
+                  <Check className="size-3.5" aria-hidden="true" />
+                  Enviado
+                </>
+              ) : (
+                "Enviar a los diseñadores"
+              )}
+            </button>
+            {sendState === "success" && (
+              <p
+                className="border border-emerald-200 bg-emerald-50 p-3 text-[11px] leading-relaxed text-emerald-900"
+                role="status"
+              >
+                Enviado. El equipo de diseño de RACOR ya tiene tu resumen. Para que puedan
+                contestarte, envíalo también por WhatsApp.
+              </p>
+            )}
+            {sendState === "error" && (
+              <p
+                className="border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900"
+                role="alert"
+              >
+                No hemos podido enviarlo desde la web. Envíalo por WhatsApp y llegará
+                igual al equipo de diseño.
+              </p>
+            )}
+            <a
+              className="inline-flex min-h-10 items-center justify-center gap-2 border border-neutral-300 px-4 text-[10px] font-semibold uppercase tracking-[0.09em] text-neutral-800 transition-colors hover:border-racor hover:text-racor"
+              href={whatsAppHref}
+              onClick={onWhatsAppClick}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <WhatsAppIcon className="size-4 text-[#25D366]" />
+              Enviar por WhatsApp
+            </a>
+            <button
+              className="inline-flex min-h-9 items-center justify-center gap-2 text-[10px] font-semibold uppercase tracking-[0.09em] text-neutral-500 transition-colors hover:text-neutral-950"
+              onClick={copySummary}
+              type="button"
+            >
+              <Copy className="size-3.5" aria-hidden="true" />
+              {copied ? "Copiado" : "Copiar resumen"}
+            </button>
+          </div>
+        </div>
+      </MessageContent>
+    </Message>
+  );
+}
+
 export function ProductAssistant() {
   const pathname = usePathname();
   const compactLauncher = pathname.startsWith("/configurador/");
@@ -336,6 +497,10 @@ export function ProductAssistant() {
       : [];
   const savedMessageCount = Math.max(0, messages.length - 1);
   const hasCustomerMessages = messages.some((message) => message.role === "user");
+  const orderSummary = useMemo(
+    () => extractOrderSummary(messages, contextHandle),
+    [messages, contextHandle]
+  );
   const whatsAppSummary = buildWhatsAppSummary(messages, contextHandle);
   const whatsAppHref = whatsAppLink(whatsAppSummary);
 
@@ -689,6 +854,20 @@ export function ProductAssistant() {
                 </MessageContent>
               </Message>
             ))}
+
+            {orderSummary &&
+              orderSummary.detectedCount > 0 &&
+              status !== "streaming" &&
+              status !== "submitted" && (
+                <OrderSummaryCard
+                  key={whatsAppSummary}
+                  summary={orderSummary}
+                  contextHandle={contextHandle}
+                  whatsAppHref={whatsAppHref}
+                  whatsAppSummary={whatsAppSummary}
+                  onWhatsAppClick={() => openWhatsApp()}
+                />
+              )}
 
             {status === "submitted" && (
               <Message from="assistant">

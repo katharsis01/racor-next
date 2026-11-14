@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return NextResponse.json({ ok: false, configured: false });
 
-  let data: { summary?: unknown; product?: unknown };
+  let data: { summary?: unknown; product?: unknown; source?: unknown };
   try {
     data = await req.json();
   } catch {
@@ -52,9 +52,12 @@ export async function POST(req: Request) {
   }
 
   const product = typeof data.product === "string" ? data.product.slice(0, 120) : "";
+  const source = data.source === "designers" ? "designers" : "whatsapp";
   const text = [
     "Nuevo cliente desde el chat de racorsport.cc",
-    "Ha pulsado «Resumen por WhatsApp» (puede que no llegue a enviarlo).",
+    source === "designers"
+      ? "El cliente ha enviado su resumen a diseño desde el chat."
+      : "Ha pulsado «Resumen por WhatsApp» (puede que no llegue a enviarlo).",
     product ? `Página de producto: ${product}` : undefined,
     "",
     Array.from(summary).slice(0, MAX_SUMMARY_CHARS).join(""),
