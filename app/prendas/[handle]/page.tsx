@@ -24,7 +24,6 @@ import {
 import type { Product } from "@/lib/commerce/types";
 import { SizeGuideDialog } from "@/components/site/size-guide";
 import { ProductGallery } from "@/components/site/product-gallery";
-import { ProductFinder } from "@/components/site/product-finder";
 import { AssistantLauncher } from "@/components/site/assistant-launcher";
 import {
   getAccessoryDecision,
@@ -483,11 +482,6 @@ export default async function ProductPage({
               </div>
             )}
 
-            {product.category === "maillots" && (
-              <div className="mt-12">
-                <ProductFinder />
-              </div>
-            )}
           </div>
         </section>
       )}

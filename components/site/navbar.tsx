@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 const NAV_LINKS = [
   { href: "/nosotros", label: "Nosotros" },
   { href: "/prendas", label: "Prendas" },
+  { href: "/look", label: "Look" },
   { href: "/tienda", label: "Tienda" },
   { href: "/galeria", label: "Galería" },
   { href: "/instagram", label: "Instagram" },

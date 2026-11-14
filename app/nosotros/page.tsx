@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { PageHero, SectionHead } from "@/components/site/page-hero";
+import { ProcessSteps, type ProcessStep } from "@/components/site/process-steps";
 import { Reveal } from "@/components/site/reveal";
 import { GalleryGrid } from "@/app/galeria/gallery-grid";
 import { SOLIDARITY_PROJECTS } from "@/lib/social";
@@ -28,11 +29,12 @@ const PILLARS = [
   },
 ];
 
-const PROCESS_STEPS = [
+const PROCESS_STEPS: ProcessStep[] = [
   {
     n: "01",
     t: "Tu sueño",
     d: "Coméntanos tu idea: colores, gustos, imágenes y logotipos que te gustaría incluir. Escuchamos antes de dibujar.",
+    meta: "Respuesta en 24–48 h",
   },
   {
     n: "02",
@@ -48,6 +50,7 @@ const PROCESS_STEPS = [
     n: "04",
     t: "Producción",
     d: "El diseño definitivo pasa a fabricación bajo nuestros exhaustivos controles de calidad, prenda a prenda.",
+    meta: "≈ 4 semanas",
   },
 ];
 
@@ -156,21 +159,7 @@ export default function NosotrosPage() {
           title="Cómo trabajamos"
           sub="De tu idea a la carretera: un proceso claro, cercano y sin pedido mínimo."
         />
-        <ol className="grid grid-cols-1 gap-10 px-5 sm:grid-cols-2 md:px-12 lg:grid-cols-4 lg:px-16">
-          {PROCESS_STEPS.map((step, i) => (
-            <Reveal key={step.n} delay={i * 0.08}>
-              <li>
-                <span className="mb-3.5 block text-[13px] tracking-[0.1em] text-neutral-500">
-                  {step.n}
-                </span>
-                <h3 className="mb-2.5 border-t border-neutral-900 pt-3.5 text-base font-semibold uppercase tracking-[0.04em]">
-                  {step.t}
-                </h3>
-                <p className="text-sm text-neutral-500">{step.d}</p>
-              </li>
-            </Reveal>
-          ))}
-        </ol>
+        <ProcessSteps steps={PROCESS_STEPS} />
       </section>
 
       <section className="relative flex h-[70vh] min-h-[420px] items-center justify-center overflow-hidden">
