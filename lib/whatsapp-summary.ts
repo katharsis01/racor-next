@@ -190,6 +190,13 @@ export function buildWhatsAppSummary(messages: UIMessage[], contextHandle?: stri
   return lines.join("\n");
 }
 
+export function buildPageWhatsAppText(url: string, pageTitle?: string) {
+  const intro = pageTitle
+    ? `Hola RACOR, me interesa «${pageTitle}». ¿Me podéis dar más información?`
+    : "Hola RACOR, necesito más información sobre vuestras equipaciones.";
+  return `${intro}\n${url}`;
+}
+
 export function whatsAppLink(text: string, phone = RACOR_CHAT_WHATSAPP) {
   return `https://wa.me/${phone}?text=${encodeURIComponent(text)}`;
 }
